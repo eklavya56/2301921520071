@@ -152,3 +152,34 @@ FROM notifications
 WHERE type = 'Placement'
 AND created_at >= NOW() - INTERVAL '7 days';
 ```
+
+
+
+# Stage 4
+
+## Performance Optimization — Caching Strategy
+
+### Problem
+Notifications fetch ho rahi hain har page load pe — DB overwhelmed ho raha hai.
+
+### Solutions
+
+#### 1. In-Memory Caching (Redis)
+- Cache notifications per student for 30-60 seconds
+- On new notification → invalidate that student's cache
+- **Tradeoff:** Slightly stale data possible, but massively reduced DB load
+
+#### 2. Pagination
+- Fetch only 20 notifications at a time instead of all
+- **Tradeoff:** More API calls but each call is fast
+
+#### 3. WebSocket / Server-Sent Events
+- Instead of polling DB on every page load, push new notifications to client in real-time
+- **Tradeoff:** Persistent connection needed, but no unnecessary DB hits
+
+#### 4. Read Replicas
+- Route all GET queries to a read replica of DB
+- **Tradeoff:** Small replication lag possible
+
+### Recommended Approach
+Combine **Redis caching + Pagination + WebSockets** for best performance.
