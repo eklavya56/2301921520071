@@ -69,3 +69,37 @@ All APIs assume pre-authorised users. Include `Authorization: Bearer <token>` in
 Use **WebSockets (Socket.io)** for real-time delivery.
 - Server emits `new_notification` event when a new notification arrives
 - Client listens and updates UI instantly
+
+
+# Stage 2
+
+## Database Design
+
+### Database Choice: PostgreSQL
+**Reason:** Structured data with relationships, ACID compliance, good for querying notifications by type/student, supports indexing well.
+
+### DB Schema
+
+```sql
+CREATE TABLE students (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type VARCHAR(50) NOT NULL CHECK (type IN ('Placement', 'Event', 'Result')),
+  message TEXT NOT NULL,
+  student_id UUID REFERENCES students(id),
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### Scaling Problems & Solutions
+- **Problem:** 50,000 students × millions of notifications = slow queries
+- **Solution 1:** Add indexes on `student_id`, `is_read`, `created_at`
+- **Solution 2:** Pagination on all list APIs
+- **Solution 3:** Archive old notifications to separate table
