@@ -183,3 +183,33 @@ Notifications fetch ho rahi hain har page load pe — DB overwhelmed ho raha hai
 
 ### Recommended Approach
 Combine **Redis caching + Pagination + WebSockets** for best performance.
+
+
+
+
+# Stage 5
+
+## Bulk Notification Redesign
+
+### Problem with Original Implementation
+**Shortcomings:**
+- Sequential loop — 50,000 students ek ek karke process hote hain — very slow
+- If send_email fails at student 200 — baaki 49,800 students ko email nahi milti
+- Email aur DB save ek saath hoti hai — inconsistency hoti hai
+- No retry mechanism
+- No error handling
+
+### Redesigned Solution
+- Step 1: Pehle sab students ka DB mein bulk insert karo
+- Step 2: Phir message queue mein push karo (Redis/RabbitMQ)
+- Step 3: Worker queue se ek ek job uthata hai aur email + app notification bhejta hai
+- Step 4: Agar email fail ho — retry karo max 3 baar
+
+### Should DB save and email happen together?
+No. DB save pehle honi chahiye independently. Email ek side effect hai — fail hone par retry ho sakti hai DB se. Saath mein karne se data inconsistency aati hai.
+
+### Key Improvements
+- Bulk DB insert
+- Async queue processing
+- Retry on failure
+- DB and email decoupled
