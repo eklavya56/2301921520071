@@ -213,3 +213,22 @@ No. DB save pehle honi chahiye independently. Email ek side effect hai — fail 
 - Async queue processing
 - Retry on failure
 - DB and email decoupled
+
+
+
+# Stage 6
+
+## Priority Inbox Implementation
+
+### Approach
+Notifications ko priority order mein dikhana hai:
+- Placement > Result > Event (weight based)
+- Same weight mein — newest first (recency based)
+
+### Priority Weights
+- Placement = 3
+- Result = 2
+- Event = 1
+
+### Algorithm
+Top N notifications fetch karo using a Max Heap based on (weight, timestamp)
