@@ -103,3 +103,52 @@ CREATE TABLE notifications (
 - **Solution 1:** Add indexes on `student_id`, `is_read`, `created_at`
 - **Solution 2:** Pagination on all list APIs
 - **Solution 3:** Archive old notifications to separate table
+
+
+# Stage 3
+
+## Database Query Analysis
+
+### Given Query:
+```sql
+SELECT * FROM notifications
+WHERE studentID = 1042 AND isRead = false
+ORDER BY createdAt ASC;
+```
+
+### Is this query accurate?
+No. Issues:
+- `SELECT *` fetches unnecessary columns — wasteful
+- No `LIMIT` — fetches all unread notifications at once
+- `createdAt ASC` — oldest first, but users want newest first (should be DESC)
+
+### Why is it slow?
+- No indexes on `studentID`, `isRead`, `createdAt`
+- Full table scan on 5,000,000 rows
+
+### Fixed Query:
+```sql
+SELECT id, type, message, created_at 
+FROM notifications
+WHERE student_id = 1042 AND is_read = false
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+### Should we add indexes on every column?
+No. Indexes speed up reads but slow down writes (INSERT/UPDATE). Only index frequently queried columns: `student_id`, `is_read`, `created_at`.
+
+### Recommended Indexes:
+```sql
+CREATE INDEX idx_notifications_student_id ON notifications(student_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+```
+
+### Find students with Placement notification in last 7 days:
+```sql
+SELECT DISTINCT student_id 
+FROM notifications
+WHERE type = 'Placement'
+AND created_at >= NOW() - INTERVAL '7 days';
+```
